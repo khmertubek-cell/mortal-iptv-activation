@@ -1,0 +1,8 @@
+name = "mortal-iptv-activation"
+main = "src/index.ts"
+compatibility_date = "2026-11-24"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "mortal-iptv-db"
+database_id = "YOUR_DATABASE_ID"
