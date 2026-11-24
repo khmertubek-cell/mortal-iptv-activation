@@ -11,7 +11,8 @@ export default {
 
     const url = new URL(request.url);
 
-    if (request.method !== "POST" || url.pathname !== "/activate") {
+    if (request.method !== "POST" ||
+        url.pathname !== "/activate") {
       return Response.json(
         { success: false, message: "Not found" },
         { status: 404, headers }
@@ -27,7 +28,8 @@ export default {
       const code = body.code?.trim();
       const deviceId = body.deviceId?.trim();
 
-      if (!code || !deviceId || code.length > 100 || deviceId.length > 150) {
+      if (!code || !deviceId ||
+          code.length > 100 || deviceId.length > 150) {
         return Response.json(
           { success: false, message: "Invalid request" },
           { status: 400, headers }
@@ -36,7 +38,8 @@ export default {
 
       const record = await env.DB.prepare(`
         SELECT code, status, device_id, expires_at
-        FROM activation_codes WHERE code = ?
+        FROM activation_codes
+        WHERE code = ?
       `).bind(code).first<{
         code: string;
         status: string;
@@ -47,28 +50,29 @@ export default {
       if (!record) {
         return Response.json(
           { success: false, message: "Invalid activation code" },
-          { headers }
+          { status: 200, headers }
         );
       }
 
       if (record.status !== "active") {
         return Response.json(
           { success: false, message: "Code is disabled" },
-          { headers }
+          { status: 200, headers }
         );
       }
 
       if (Date.parse(record.expires_at) <= Date.now()) {
         return Response.json(
           { success: false, message: "Activation code expired" },
-          { headers }
+          { status: 200, headers }
         );
       }
 
-      if (record.device_id && record.device_id !== deviceId) {
+      if (record.device_id &&
+          record.device_id !== deviceId) {
         return Response.json(
           { success: false, message: "Code already used on another device" },
-          { headers }
+          { status: 200, headers }
         );
       }
 
@@ -76,9 +80,9 @@ export default {
         UPDATE activation_codes
         SET device_id = ?
         WHERE code = ?
-        AND status = 'active'
-        AND (device_id IS NULL OR device_id = ?)
-        AND expires_at > ?
+          AND status = 'active'
+          AND (device_id IS NULL OR device_id = ?)
+          AND expires_at > ?
       `).bind(
         deviceId,
         code,
@@ -88,8 +92,8 @@ export default {
 
       if (result.meta.changes !== 1) {
         return Response.json(
-          { success: false, message: "Activation failed" },
-          { headers }
+          { success: false, message: "Activation could not be completed" },
+          { status: 200, headers }
         );
       }
 
